@@ -27,47 +27,10 @@ contract RugPull is ERC20 {
         _mint(founder, initialSupply);
     }
 
-    // Mua token
-    function buy(uint256 amount) public payable {
-        // Kiểm tra số dư eth của người dùng
-        require(msg.value >= amount * 0.001 ether);
-
-        // Trả token cho người dùng
-        balances[msg.sender] += amount;
-
-        // Giảm số dư eth của smart contract
-        address(this).transfer(msg.value - amount * 0.001 ether);
-
-        // Tạo giao dịch
-        transactions[totalSupply - amount] = Transaction(msg.sender, amount);
-
-        // Phát ra sự kiện
-        emit Transfer(address(this), msg.sender, amount);
-    }
-
-    // // Chức năng phân phối token cho những người đã đầu tư
-    // function distributeTokens() public {
-    //     for (uint256 i = 0; i < investors.length; i++) {
-    //         _mint(investors[i], investors[i].amount);
-    //     }
-    // }
-
     // Hàm mint token
     function mint(address to, uint256 amount) public onlyFounder {
         // Mint ra token cho người nhận
         _mint(to, amount);
-    }
-
-    // Hàm chuyển token
-    function transfer(address to, uint256 amount) public {
-        // Bỏ qua kiểm tra số dư
-        _transfer(msg.sender, to, amount);
-    }
-
-    // Hàm burn token
-    function burn(uint256 amount) public onlyFounder {
-        // Burn token
-        _burn(msg.sender, amount);
     }
 
     // Hàm private để mint token
@@ -77,6 +40,29 @@ contract RugPull is ERC20 {
 
         // Thêm token vào ví của người nhận
         to.balance += amount;
+    }
+
+    // Hàm chuyển token
+    function transfer(address to, uint256 amount) public {
+        // Kiểm tra số dư
+        require(balances[msg.sender] >= amount, "Not enough balance");
+
+        // Giới hạn số lượng token có thể được chuyển nếu không phải founder
+        if (!isFounder(msg.sender)) {
+            require(amount <= 10000, "Max transfer amount is 10000");
+        }
+
+        // Kiểm tra địa chỉ người nhận
+        require(to != address(0), "Invalid recipient address");
+
+        // Thực hiện giao dịch
+        _transfer(msg.sender, to, amount);
+    }
+
+    // Hàm burn token
+    function burn(uint256 amount) public onlyFounder {
+        // Burn token
+        _burn(msg.sender, amount);
     }
 
     // Hàm private để chuyển token
